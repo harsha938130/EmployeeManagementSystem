@@ -1,90 +1,74 @@
+
 package com.employee;
 
-import java.util.ArrayList;
+import java.sql.SQLException;
+import java.util.List;
 
 public class EmployeeService {
 
-    private ArrayList<Employee> employees = new ArrayList<>();
+	private final EmployeeDAO employeeDAO = new EmployeeDAO();
 
-    // Add employee
-    public void addEmployee(Employee employee) {
+	// Add employee
+	public void addEmployee(Employee employee) throws SQLException {
 
-        employees.add(employee);
+		if (employeeDAO.addEmployee(employee)) {
+			System.out.println("Employee added successfully!");
+		} else {
+			System.out.println("Employee could not be added.");
+		}
+	}
 
-        System.out.println("Employee added successfully!");
-    }
+	// View all employees
+	public void viewEmployees() throws SQLException {
 
-    // View all employees
-    public void viewEmployees() {
+		List<Employee> employees = employeeDAO.getAllEmployees();
 
-        if (employees.isEmpty()) {
+		if (employees.isEmpty()) {
+			System.out.println("No employees found.");
+			return;
+		}
 
-            System.out.println("No employees found.");
+		for (Employee employee : employees) {
+			employee.displayEmployee();
+		}
+	}
 
-            return;
-        }
+	// Search employee
+	public void searchEmployee(int id) throws SQLException {
 
-        for (Employee employee : employees) {
+		Employee employee = employeeDAO.getEmployeeById(id);
 
-            employee.displayEmployee();
-        }
-    }
+		if (employee == null) {
+			System.out.println("Employee not found!");
+		} else {
+			employee.displayEmployee();
+		}
+	}
 
-    // Search employee
-    public void searchEmployee(int id) {
+	// Update employee
+	public void updateEmployee(int id, String name, String email, double salary) throws SQLException {
 
-        for (Employee employee : employees) {
+		if (employeeDAO.getEmployeeById(id) == null) {
+			System.out.println("Employee not found!");
+			return;
+		}
 
-            if (employee.getId() == id) {
+		Employee employee = new Employee(id, name, email, salary);
 
-                employee.displayEmployee();
+		if (employeeDAO.updateEmployee(employee)) {
+			System.out.println("Employee updated successfully!");
+		} else {
+			System.out.println("Employee could not be updated.");
+		}
+	}
 
-                return;
-            }
-        }
+	// Delete employee
+	public void deleteEmployee(int id) throws SQLException {
 
-        System.out.println("Employee not found.");
-    }
-
-    // Update employee
-    public void updateEmployee(
-            int id,
-            String name,
-            String email,
-            double salary) {
-
-        for (Employee employee : employees) {
-
-            if (employee.getId() == id) {
-
-                employee.setName(name);
-                employee.setEmail(email);
-                employee.setSalary(salary);
-
-                System.out.println("Employee updated successfully!");
-
-                return;
-            }
-        }
-
-        System.out.println("Employee not found.");
-    }
-
-    // Delete employee
-    public void deleteEmployee(int id) {
-
-        for (Employee employee : employees) {
-
-            if (employee.getId() == id) {
-
-                employees.remove(employee);
-
-                System.out.println("Employee deleted successfully!");
-
-                return;
-            }
-        }
-
-        System.out.println("Employee not found.");
-    }
+		if (employeeDAO.deleteEmployee(id)) {
+			System.out.println("Employee deleted successfully!");
+		} else {
+			System.out.println("Employee not found!");
+		}
+	}
 }

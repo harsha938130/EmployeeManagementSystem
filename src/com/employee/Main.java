@@ -1,24 +1,29 @@
+
 package com.employee;
 
+import java.sql.SQLException;
 import java.util.Scanner;
 
 public class Main {
 
     public static void main(String[] args) {
-    	
-    	DBConnection.getConnection();
-    	
-        Scanner scanner = new Scanner(System.in);
 
+        Scanner scanner = new Scanner(System.in);
         EmployeeService service = new EmployeeService();
+
+        // Test database connection
+        try (var connection = DBConnection.getConnection()) {
+            System.out.println("Database connected successfully!");
+        } catch (SQLException e) {
+            System.out.println("Database connection failed!");
+            System.out.println(e.getMessage());
+            scanner.close();
+            return;
+        }
 
         while (true) {
 
-            System.out.println();
-            System.out.println("========================================");
-            System.out.println("       EMPLOYEE MANAGEMENT SYSTEM");
-            System.out.println("========================================");
-
+            System.out.println("\n===== EMPLOYEE MANAGEMENT SYSTEM =====");
             System.out.println("1. Add Employee");
             System.out.println("2. View Employees");
             System.out.println("3. Search Employee");
@@ -26,96 +31,146 @@ public class Main {
             System.out.println("5. Delete Employee");
             System.out.println("6. Exit");
 
-            System.out.print("Enter your choice: ");
+            int choice = readInteger(scanner, "Enter your choice: ");
 
-            int choice = scanner.nextInt();
+            if (choice < 1 || choice > 6) {
+                System.out.println("Enter a number from 1 to 6!");
+                continue;
+            }
 
-            switch (choice) {
+            if (choice == 6) {
+                System.out.println("Thank you!");
+                scanner.close();
+                return;
+            }
 
-                case 1:
-                    System.out.print("Enter Employee ID: ");
-                    int id = scanner.nextInt();
+            try {
+                switch (choice) {
 
-                    scanner.nextLine();
+                    case 1: {
+                        String name = readName(scanner, "Enter name: ");
+                        String email = readEmail(scanner, "Enter email: ");
+                        double salary = readSalary(scanner, "Enter salary: ");
 
-                    System.out.print("Enter Name: ");
-                    String name = scanner.nextLine();
+                        Employee employee = new Employee(name, email, salary);
+                        service.addEmployee(employee);
+                        break;
+                    }
 
-                    System.out.print("Enter Email: ");
-                    String email = scanner.nextLine();
+                    case 2:
+                        service.viewEmployees();
+                        break;
 
-                    System.out.print("Enter Salary: ");
-                    double salary = scanner.nextDouble();
+                    case 3: {
+                        int id = readPositiveId(
+                                scanner, "Enter employee ID: ");
+                        service.searchEmployee(id);
+                        break;
+                    }
 
-                    Employee employee =
-                            new Employee(id, name, email, salary);
+                    case 4: {
+                        int id = readPositiveId(
+                                scanner, "Enter employee ID: ");
 
-                    service.addEmployee(employee);
+                        String name = readName(
+                                scanner, "Enter new name: ");
+                        String email = readEmail(
+                                scanner, "Enter new email: ");
+                        double salary = readSalary(
+                                scanner, "Enter new salary: ");
 
-                    break;
+                        service.updateEmployee(id, name, email, salary);
+                        break;
+                    }
 
-                case 2:
+                    case 5: {
+                        int id = readPositiveId(
+                                scanner, "Enter employee ID: ");
+                        service.deleteEmployee(id);
+                        break;
+                    }
+                }
 
-                    service.viewEmployees();
+            } catch (IllegalArgumentException e) {
+                System.out.println("Invalid data: " + e.getMessage());
+            } catch (SQLException e) {
+                System.out.println("Database error: " + e.getMessage());
+            }
+        }
+    }
 
-                    break;
+    private static int readInteger(Scanner scanner, String prompt) {
+        while (true) {
+            System.out.print(prompt);
+            String input = scanner.nextLine().trim();
 
-                case 3:
+            try {
+                return Integer.parseInt(input);
+            } catch (NumberFormatException e) {
+                System.out.println("Please enter a whole number!");
+            }
+        }
+    }
 
-                    System.out.print("Enter Employee ID: ");
-                    int searchId = scanner.nextInt();
+    private static int readPositiveId(Scanner scanner, String prompt) {
+        while (true) {
+            int id = readInteger(scanner, prompt);
 
-                    service.searchEmployee(searchId);
+            if (id > 0) {
+                return id;
+            }
 
-                    break;
+            System.out.println("ID must be greater than zero!");
+        }
+    }
 
-                case 4:
+    private static String readName(Scanner scanner, String prompt) {
+        while (true) {
+            System.out.print(prompt);
+            String name = scanner.nextLine();
 
-                    System.out.print("Enter Employee ID: ");
-                    int updateId = scanner.nextInt();
+            try {
+                new Employee(name, "check@example.com", 1);
+                return name.trim();
+            } catch (IllegalArgumentException e) {
+                System.out.println(e.getMessage());
+            }
+        }
+    }
 
-                    scanner.nextLine();
+    private static String readEmail(Scanner scanner, String prompt) {
+        while (true) {
+            System.out.print(prompt);
+            String email = scanner.nextLine();
 
-                    System.out.print("Enter New Name: ");
-                    String newName = scanner.nextLine();
+            try {
+                new Employee("Check Name", email, 1);
+                return email.trim();
+            } catch (IllegalArgumentException e) {
+                System.out.println(e.getMessage());
+            }
+        }
+    }
 
-                    System.out.print("Enter New Email: ");
-                    String newEmail = scanner.nextLine();
+    private static double readSalary(Scanner scanner, String prompt) {
+        while (true) {
+            System.out.print(prompt);
+            String input = scanner.nextLine().trim();
 
-                    System.out.print("Enter New Salary: ");
-                    double newSalary = scanner.nextDouble();
+            try {
+                double salary = Double.parseDouble(input);
 
-                    service.updateEmployee(
-                            updateId,
-                            newName,
-                            newEmail,
-                            newSalary
-                    );
-
-                    break;
-
-                case 5:
-
-                    System.out.print("Enter Employee ID: ");
-                    int deleteId = scanner.nextInt();
-
-                    service.deleteEmployee(deleteId);
-
-                    break;
-
-                case 6:
-
+                if (!Double.isFinite(salary) || salary <= 0) {
                     System.out.println(
-                            "Thank you for using Employee Management System!"
-                    );
+                            "Salary must be a positive number!");
+                    continue;
+                }
 
-                    scanner.close();
+                return salary;
 
-                    return;
-
-                default:
-
-                    System.out.println("Invalid choice!");
+            } catch (NumberFormatException e) {
+                System.out.println(
+                        "Please enter a valid numeric salary!");
             }
         }
     }
